@@ -11,24 +11,29 @@ fire_sound = mixer.Sound('fire.ogg')
 
 #шрифты и надписи
 font.init()
+font1 = font.Font(None, 80)
+win = font1.render('YOU WIN!', True, (255, 255, 255))
+lose = font1.render('YOU LOSE!', True, (180, 0, 0))
 font2 = font.Font(None, 36)
 
 
 #нам нужны такие картинки:
-img_back = "galaxy.jpg" # фон игры
-img_hero = "rocket.png" # герой
-img_enemy = "ufo.png" # враг
+img_back = "galaxy.jpg" #фон игры
+img_hero = "rocket.png" #герой
+img_bullet = "bullet.png" #пуля
+img_enemy = "ufo.png" #враг
 
 
 score = 0 #сбито кораблей
 lost = 0 #пропущено кораблей
+max_lost = 3 #проиграли, если пропустили столько
 
 
 #класс-родитель для других спрайтов
 class GameSprite(sprite.Sprite):
  #конструктор класса
    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
-       #Вызываем конструктор класса (Sprite):
+       #вызываем конструктор класса (Sprite):
        sprite.Sprite.__init__(self)
 
 
@@ -57,7 +62,8 @@ class Player(GameSprite):
            self.rect.x += self.speed
  #метод "выстрел" (используем место игрока, чтобы создать там пулю)
    def fire(self):
-       pass
+       bullet = Bullet(img_bullet, self.rect.centerx, self.rect.top, 15, 20, -15)
+       bullets.add(bullet)
 
 
 #класс спрайта-врага  
@@ -73,7 +79,17 @@ class Enemy(GameSprite):
            lost = lost + 1
 
 
-#Создаём окошко
+#класс спрайта-пули  
+class Bullet(GameSprite):
+   #движение врага
+   def update(self):
+       self.rect.y += self.speed
+       #исчезает, если дойдет до края экрана
+       if self.rect.y < 0:
+           self.kill()
+
+
+#создаем окошко
 win_width = 700
 win_height = 500
 display.set_caption("Shooter")
@@ -81,7 +97,7 @@ window = display.set_mode((win_width, win_height))
 background = transform.scale(image.load(img_back), (win_width, win_height))
 
 
-#создаём спрайты
+#создаем спрайты
 ship = Player(img_hero, 5, win_height - 100, 80, 100, 10)
 
 
@@ -91,15 +107,23 @@ for i in range(1, 6):
    monsters.add(monster)
 
 
+bullets = sprite.Group()
+
+
 #переменная "игра закончилась": как только там True, в основном цикле перестают работать спрайты
 finish = False
-#Основной цикл игры:
+#основной цикл игры:
 run = True #флаг сбрасывается кнопкой закрытия окна
 while run:
-   #событие нажатия на кнопку “Закрыть”
+   #событие нажатия на кнопку Закрыть
    for e in event.get():
        if e.type == QUIT:
            run = False
+       #событие нажатия на пробел - спрайт стреляет
+       elif e.type == KEYDOWN:
+           if e.key == K_SPACE:
+               fire_sound.play()
+               ship.fire()
 
 
    if not finish:
@@ -119,13 +143,14 @@ while run:
        #производим движения спрайтов
        ship.update()
        monsters.update()
+       bullets.update()
 
 
        #обновляем их в новом местоположении при каждой итерации цикла
        ship.reset()
        monsters.draw(window)
+       bullets.draw(window)
 
 
        display.update()
-
   
